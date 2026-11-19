@@ -105,6 +105,9 @@ export class MeliAuth {
   }
 
   async getValidAccessToken(): Promise<string | null> {
+    if (process.env.MELI_ACCESS_TOKEN) {
+      return process.env.MELI_ACCESS_TOKEN;
+    }
     if (!this.tokenData) return null;
     if (Date.now() >= this.tokenExpiresAt) {
       const refreshed = await this.refreshToken();
@@ -114,6 +117,9 @@ export class MeliAuth {
   }
 
   getUserId(): string | null {
+    if (process.env.MELI_USER_ID) {
+      return process.env.MELI_USER_ID;
+    }
     return this.tokenData ? String(this.tokenData.user_id) : null;
   }
 }

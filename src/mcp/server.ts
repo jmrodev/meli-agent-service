@@ -174,7 +174,7 @@ export async function startMcpStdio() {
   const redirectUri = process.env.MELI_REDIRECT_URI || 'http://localhost:3000/api/v1/auth/callback';
 
   let auth: MeliAuth | undefined;
-  if (clientId && clientSecret) {
+  if (clientId || process.env.MELI_ACCESS_TOKEN) {
     auth = new MeliAuth({ clientId, clientSecret, redirectUri });
   }
 
