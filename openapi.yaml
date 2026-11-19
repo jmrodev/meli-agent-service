@@ -1,0 +1,144 @@
+openapi: 3.0.3
+info:
+  title: Mercado Libre Agent Service & MCP Bridge
+  version: 1.0.0
+  description: Microservicio y MCP Server para integración con la API de Mercado Libre bajo estándares de EDI 3 y OWASP LLM 2025.
+paths:
+  /health:
+    get:
+      summary: Health check
+      description: Endpoint básico de disponibilidad del servicio.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - status
+                  - uptime
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+                  uptime:
+                    type: number
+                    example: 42.5
+
+  /api/v1/auth/url:
+    get:
+      summary: Generar URL de autorización OAuth 2.0
+      description: Devuelve la URL para redirigir al vendedor y autorizar la aplicación de Mercado Libre.
+      responses:
+        '200':
+          description: URL generada con state anti-CSRF
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - authUrl
+                  - state
+                properties:
+                  authUrl:
+                    type: string
+                    example: "https://auth.mercadolibre.com.ar/authorization?..."
+                  state:
+                    type: string
+                    example: "csrf-random-token"
+
+  /api/v1/auth/callback:
+    post:
+      summary: Callback de intercambio de código por tokens
+      description: Recibe el authorization code y realiza el token exchange con Mercado Libre.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - code
+                - state
+              properties:
+                code:
+                  type: string
+                state:
+                  type: string
+      responses:
+        '200':
+          description: Autenticación exitosa
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - status
+                  - userId
+                properties:
+                  status:
+                    type: string
+                    example: "authenticated"
+                  userId:
+                    type: string
+                    example: "123456789"
+
+  /api/v1/items/search:
+    get:
+      summary: Búsqueda pública de productos en Mercado Libre
+      description: Busca publicaciones con filtros normalizados y sanitización de entrada.
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 100
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
+      responses:
+        '200':
+          description: Lista de productos normalizada
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - query
+                  - total
+                  - results
+                properties:
+                  query:
+                    type: string
+                  total:
+                    type: integer
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      required:
+                        - id
+                        - title
+                        - price
+                        - currency
+                        - permalink
+                      properties:
+                        id:
+                          type: string
+                        title:
+                          type: string
+                        price:
+                          type: number
+                        currency:
+                          type: string
+                        permalink:
+                          type: string
+                        thumbnail:
+                          type: string
