@@ -1,4 +1,15 @@
-import { MeliSearchResponseSchema, MeliItemDetailSchema, type MeliSearchResponse, type MeliItemDetail } from './schemas.js';
+import {
+  MeliSearchResponseSchema,
+  MeliItemDetailSchema,
+  MeliUserProfileSchema,
+  MeliCategoryAttributeSchema,
+  MeliPaymentMethodSchema,
+  type MeliSearchResponse,
+  type MeliItemDetail,
+  type MeliUserProfile,
+  type MeliCategoryAttribute,
+  type MeliPaymentMethod
+} from './schemas.js';
 import { MeliAuth } from './auth.js';
 
 export interface MeliClientOptions {
@@ -112,5 +123,65 @@ export class MeliClient {
 
     const data = await res.json();
     return MeliItemDetailSchema.parse(data);
+  }
+
+  /**
+   * Obtiene el perfil del usuario autenticado.
+   */
+  async getUserProfile(): Promise<MeliUserProfile> {
+    const res = await this.request('/users/me');
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`Error consultando usuario (/users/me) (${res.status}): ${err}`);
+    }
+
+    const data = await res.json();
+    return MeliUserProfileSchema.parse({
+      id: data.id,
+      nickname: data.nickname,
+      country_id: data.country_id,
+      email: data.email,
+      site_status: data.status?.site_status || 'unknown',
+      permalink: data.permalink
+    });
+  }
+
+  /**
+   * Obtiene los atributos y especificaciones requeridas de una categoría.
+   */
+  async getCategoryAttributes(categoryId: string): Promise<MeliCategoryAttribute[]> {
+    const res = await this.request(`/categories/${categoryId}/attributes`);
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`Error consultando atributos de categoría ${categoryId} (${res.status}): ${err}`);
+    }
+
+    const data = await res.json();
+    return (data as any[]).slice(0, 15).map((a) => MeliCategoryAttributeSchema.parse({
+      id: a.id,
+      name: a.name,
+      value_type: a.value_type,
+      tags: a.tags,
+      hint: a.hint
+    }));
+  }
+
+  /**
+   * Consulta los métodos de pago disponibles en Mercado Pago / Mercado Libre.
+   */
+  async getPaymentMethods(): Promise<MeliPaymentMethod[]> {
+    const res = await this.request('https://api.mercadopago.com/v1/payment_methods');
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`Error consultando medios de pago (${res.status}): ${err}`);
+    }
+
+    const data = await res.json();
+    return (data as any[]).map((p) => MeliPaymentMethodSchema.parse({
+      id: p.id,
+      name: p.name,
+      payment_type_id: p.payment_type_id,
+      status: p.status
+    }));
   }
 }

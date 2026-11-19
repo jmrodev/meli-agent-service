@@ -53,3 +53,34 @@ export const MeliItemDetailSchema = z.object({
 });
 
 export type MeliItemDetail = z.infer<typeof MeliItemDetailSchema>;
+
+export const MeliUserProfileSchema = z.object({
+  id: z.number(),
+  nickname: z.string(),
+  country_id: z.string(),
+  email: z.string(),
+  site_status: z.string().optional(),
+  permalink: z.string().optional()
+});
+
+export type MeliUserProfile = z.infer<typeof MeliUserProfileSchema>;
+
+export const MeliCategoryAttributeSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  value_type: z.string().optional(),
+  tags: z.record(z.string(), z.any()).optional(),
+  hint: z.string().optional()
+});
+
+export type MeliCategoryAttribute = z.infer<typeof MeliCategoryAttributeSchema>;
+
+export const MeliPaymentMethodSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  payment_type_id: z.string(),
+  status: z.string()
+});
+
+export type MeliPaymentMethod = z.infer<typeof MeliPaymentMethodSchema>;
+

@@ -70,6 +70,36 @@ export function createMeliMcpServer(client: MeliClient, auth?: MeliAuth) {
             type: 'object',
             properties: {}
           }
+        },
+        {
+          name: 'meli_get_user_profile',
+          description: 'Obtiene el perfil del usuario autenticado en Mercado Libre (nickname, email, status, país).',
+          inputSchema: {
+            type: 'object',
+            properties: {}
+          }
+        },
+        {
+          name: 'meli_get_category_attributes',
+          description: 'Consulta los atributos y especificaciones requeridas de una categoría de Mercado Libre (ej: "MLA1055" para celulares).',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              categoryId: {
+                type: 'string',
+                description: 'ID de la categoría (ej: "MLA1055")'
+              }
+            },
+            required: ['categoryId']
+          }
+        },
+        {
+          name: 'meli_get_payment_methods',
+          description: 'Consulta los medios de pago disponibles activos (tarjetas, efectivo, dinero en cuenta).',
+          inputSchema: {
+            type: 'object',
+            properties: {}
+          }
         }
       ]
     };
@@ -88,6 +118,69 @@ export function createMeliMcpServer(client: MeliClient, auth?: MeliAuth) {
             {
               type: 'text',
               text: `<auth_status authenticated="${Boolean(token)}" user_id="${userId || 'none'}" />`
+            }
+          ]
+        };
+      }
+
+      if (name === 'meli_get_user_profile') {
+        const user = await client.getUserProfile();
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `<user_profile id="${user.id}">
+  <nickname>${user.nickname}</nickname>
+  <email>${user.email}</email>
+  <country>${user.country_id}</country>
+  <status>${user.site_status || 'active'}</status>
+  <link>${user.permalink || ''}</link>
+</user_profile>`
+            }
+          ]
+        };
+      }
+
+      if (name === 'meli_get_category_attributes') {
+        const schema = z.object({
+          categoryId: z.string().min(3).max(20)
+        });
+        const parsed = schema.parse(args);
+        const attrs = await client.getCategoryAttributes(parsed.categoryId);
+
+        const xmlList = attrs
+          .map(
+            (a) => `  <attribute id="${a.id}" name="${a.name}" type="${a.value_type || 'string'}">
+    <required>${Boolean(a.tags?.required)}</required>
+    <hint>${a.hint || ''}</hint>
+  </attribute>`
+          )
+          .join('\n');
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `<category_attributes category="${parsed.categoryId}">\n${xmlList}\n</category_attributes>`
+            }
+          ]
+        };
+      }
+
+      if (name === 'meli_get_payment_methods') {
+        const methods = await client.getPaymentMethods();
+        const xmlList = methods
+          .slice(0, 15)
+          .map(
+            (m) => `  <payment_method id="${m.id}" name="${m.name}" type="${m.payment_type_id}" status="${m.status}" />`
+          )
+          .join('\n');
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `<payment_methods total="${methods.length}">\n${xmlList}\n</payment_methods>`
             }
           ]
         };
